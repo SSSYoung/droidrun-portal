@@ -46,9 +46,9 @@ class DroidrunContentProvider : ContentProvider() {
         selection: String?,
         selectionArgs: Array<String>?,
         sortOrder: String?
-    ): Cursor? {
+    ): Cursor {
         val cursor = MatrixCursor(arrayOf("result"))
-        
+
         try {
             val result = when (uriMatcher.match(uri)) {
                 A11Y_TREE -> getAccessibilityTree()
@@ -57,14 +57,14 @@ class DroidrunContentProvider : ContentProvider() {
                 STATE -> getCombinedState()
                 else -> createErrorResponse("Unknown endpoint: ${uri.path}")
             }
-            
+
             cursor.addRow(arrayOf(result))
-            
+
         } catch (e: Exception) {
             Log.e(TAG, "Query execution failed", e)
             cursor.addRow(arrayOf(createErrorResponse("Execution failed: ${e.message}")))
         }
-        
+
         return cursor
     }
 
@@ -165,22 +165,22 @@ class DroidrunContentProvider : ContentProvider() {
     private fun getCombinedState(): String {
         val accessibilityService = DroidrunAccessibilityService.getInstance()
             ?: return createErrorResponse("Accessibility service not available")
-        
+
         return try {
             // Get accessibility tree
             val treeJson = accessibilityService.getVisibleElements().map { element ->
                 buildElementNodeJson(element)
             }
-            
+
             // Get phone state
             val phoneStateJson = buildPhoneStateJson(accessibilityService.getPhoneState())
-            
+
             // Combine both in a single response
             val combinedState = JSONObject().apply {
                 put("a11y_tree", org.json.JSONArray(treeJson))
                 put("phone_state", phoneStateJson)
             }
-            
+
             createSuccessResponse(combinedState.toString())
         } catch (e: Exception) {
             Log.e(TAG, "Failed to get combined state", e)
@@ -225,7 +225,7 @@ class DroidrunContentProvider : ContentProvider() {
             }
             val result = focusedNode.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, arguments)
             focusedNode.recycle()
-            
+
             if (result) {
                 val mode = if (append) "appended" else "set"
                 "success: Text $mode - '$text'"
